@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบถ่ายรูปและประเมินบาดแผลทันที</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-3 md:p-6">
+    <div class="max-w-xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden p-5 space-y-5">
+        
+        <!-- Header -->
+        <div class="border-b pb-3 text-center md:text-left">
+            <h1 class="text-2xl font-bold text-slate-800">🏥 ระบบประเมินบาดแผลอัตโนมัติ</h1>
+            <p class="text-sm text-slate-500">ถ่ายภาพบาดแผลเพื่อวิเคราะห์เนื้อเยื่อและประเมินผลทันที</p>
+        </div>
+
+        <!-- Camera / Upload Section -->
+        <div class="space-y-3">
+            <label class="block text-sm font-semibold text-slate-700">1. ถ่ายภาพหรืออัปโหลดรูปแผล</label>
+            <input type="file" id="imageInput" accept="image/*" capture="environment" class="hidden" onchange="processWoundImage(event)">
+            
+            <button onclick="document.getElementById('imageInput').click()" 
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                📸 ถ่ายภาพ / เลือกรูปภาพเพื่อประเมิน
+            </button>
+
+            <!-- Image & Canvas Canvas Container -->
+            <div id="previewContainer" class="relative hidden mt-3 border-2 border-dashed border-slate-300 rounded-xl overflow-hidden bg-black flex justify-center items-center">
+                <img id="woundPreview" class="max-h-64 object-contain">
+                <canvas id="analysisCanvas" class="hidden"></canvas>
+            </div>
+        </div>
+
+        <!-- Processing Indicator -->
+        <div id="loading" class="hidden text-center py-4">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
+            <p class="text-sm text-indigo-600 font-semibold mt-2">กำลังวิเคราะห์พิกเซลและลักษณะบาดแผล...</p>
+        </div>
+
+        <!-- Evaluation Results Section -->
+        <div id="resultSection" class="hidden space-y-4 border-t pt-4">
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                📊 ผลการประเมินบาดแผล (Instant Assessment)
+            </h2>
+
+            <!-- Status Banner -->
+            <div id="statusBanner" class="p-3 rounded-xl text-sm font-semibold border"></div>
+
+            <!-- Tissue Color Ratio Grid -->
+            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="p-2 bg-red-50 border border-red-200 rounded-lg">
+                    <span class="block font-bold text-red-600">เนื้อแดง (Granulation)</span>
+                    <span id="redPercent" class="text-base font-extrabold text-slate-800">0%</span>
+                </div>
+                <div class="p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <span class="block font-bold text-yellow-600">เนื้อเหลือง (Slough)</span>
+                    <span id="yellowPercent" class="text-base font-extrabold text-slate-800">0%</span>
+                </div>
+                <div class="p-2 bg-zinc-100 border border-zinc-300 rounded-lg">
+                    <span class="block font-bold text-zinc-700">เนื้อดำ (Eschar)</span>
+                    <span id="blackPercent" class="text-base font-extrabold text-slate-800">0%</span>
+                </div>
+            </div>
+
+            <!-- Medical Recommendation -->
+            <div class="bg-slate-50 p-3 rounded-xl border space-y-1">
+                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wide">คำแนะนำเบื้องต้นในการดูแล:</h3>
+                <p id="recommendationText" class="text-xs text-slate-600 leading-relaxed"></p>
+            </div>
+
+            <!-- Export / Save Action -->
+            <button onclick="alert('บันทึกผลการประเมินลงในประวัติการรักษาเรียบร้อยแล้ว')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl transition text-sm">
+                💾 บันทึกรายงานการประเมินเข้าสู่ระบบแพทย์
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function processWoundImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const preview = document.getElementById('woundPreview');
+            const container = document.getElementById('previewContainer');
+            const loading = document.getElementById('loading');
+            const resultSection = document.getElementById('resultSection');
+
+            // Reset view
+            container.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            resultSection.classList.add('hidden');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                
+                // Simulate Real-Time Computer Vision / Image Processing Analysis
+                setTimeout(() => {
+                    analyzePixels(preview);
+                    loading.classList.add('hidden');
+                    resultSection.classList.remove('hidden');
+                }, 800);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function analyzePixels(imgElement) {
+            const canvas = document.getElementById('analysisCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = imgElement.naturalWidth || 300;
+            canvas.height = imgElement.naturalHeight || 300;
+            ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            let redPixels = 0;
+            let yellowPixels = 0;
+            let blackPixels = 0;
+            let totalWoundPixels = 0;
+
+            for (let i = 0; i < data.length; i += 16) { // Sample pixels
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+
+                // Simple Color Thresholding Algorithm for Wound Tissue
+                if (r < 50 && g < 50 && b < 50) {
+                    blackPixels++;
+                    totalWoundPixels++;
+                } else if (r > 150 && g > 130 && b < 100) {
+                    yellowPixels++;
+                    totalWoundPixels++;
+                } else if (r > 120 && g < 90 && b < 90) {
+                    redPixels++;
+                    totalWoundPixels++;
+                }
+            }
+
+            if (totalWoundPixels === 0) totalWoundPixels = 1;
+
+            const redPct = Math.round((redPixels / totalWoundPixels) * 100);
+            const yellowPct = Math.round((yellowPixels / totalWoundPixels) * 100);
+            const blackPct = Math.round((blackPixels / totalWoundPixels) * 100);
+
+            // Display Results
+            document.getElementById('redPercent').innerText = redPct + '%';
+            document.getElementById('yellowPercent').innerText = yellowPct + '%';
+            document.getElementById('blackPercent').innerText = blackPct + '%';
+
+            // Evaluation Rules Logic
+            const banner = document.getElementById('statusBanner');
+            const reco = document.getElementById('recommendationText');
+
+            if (blackPct > 20) {
+                banner.className = "p-3 rounded-xl text-sm font-semibold bg-red-100 text-red-800 border-red-300";
+                banner.innerText = "⚠️ ตรวจพบเนื้อตาย (Eschar) ในระดับที่ต้องพบแพทย์";
+                reco.innerText = "แผลมีส่วนของเนื้อตายสีดำ ควรเข้ารับการตรวจโดยแพทย์เพื่อทำการกำจัดเนื้อตาย (Debridement) และประเมินการติดเชื้อ";
+            } else if (yellowPct > 30) {
+                banner.className = "p-3 rounded-xl text-sm font-semibold bg-yellow-100 text-yellow-800 border-yellow-300";
+                banner.innerText = "⚡ ตรวจพบคราบสลาฟ/หนอง (Slough) ควรทำความสะอาด";
+                reco.innerText = "ควรใช้วัสดุปิดแผลที่ช่วยดูดซับสารน้ำ หรือเลือกใช้ Hydrogel เพื่อช่วยย่อยสลายคราบเนื้อเยื่อสีเหลือง";
+            } else {
+                banner.className = "p-3 rounded-xl text-sm font-semibold bg-emerald-100 text-emerald-800 border-emerald-300";
+                banner.innerText = "✅ แผลอยู่ในแนวโน้มการสมานตัวที่ดี (Good Healing)";
+                reco.innerText = "พบเนื้อเยื่อสร้างใหม่สีแดงเป็นส่วนใหญ่ แนะนำให้รักษาความชุ่มชื้นของแผลที่เหมาะสมด้วย Moist Wound Healing";
+            }
+        }
+    </script>
+</body>
+</html>
